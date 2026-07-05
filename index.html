@@ -260,7 +260,7 @@
         // --- 2. CONFIG SUPABASE INITIALIZATION ---
         const SUPABASE_URL = "https://vmdpxqgemkwcojgjziuh.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtZHB4cWdlbWt3Y29qZ2p6aXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzg2NTgsImV4cCI6MjA5ODgxNDY1OH0.sAlGQJzAy8JLUvfBuyfNo23v3A5IStwYhNbMMbDVtFQ";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 3. DYNAMIC INTERFACE FUNCTIONS ---
         function switchLayoutMode(mode) {
