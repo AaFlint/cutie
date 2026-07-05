@@ -8,242 +8,243 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-main: #fff5f7;
+            --bg-main: #faf7f8;
             --surface: #ffffff;
             --primary: #ff758f;
             --accent: #ffb3c1;
-            --text: #423235;
-            --muted: #a38f92;
-            --border: #ffe3e8;
-            --timing: cubic-bezier(0.25, 1, 0.5, 1);
+            --text: #2b2224;
+            --muted: #8c7b7e;
+            --border: #f0e4e6;
+            --timing: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        body { background-color: var(--bg-main); color: var(--text); min-height: 100vh; padding: 40px 20px; }
 
-        .studio-header { 
-            background-color: var(--surface); 
-            padding: 14px 24px; 
-            border-bottom: 2px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
+        .workspace-container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+
+        /* Top Bar: Minimal Header & Greeting */
+        .header-section { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; }
+        .brand-title { font-family: 'Fredoka', sans-serif; font-size: 1.4rem; color: var(--primary); font-weight: 700; }
+        .greeting-bubble { font-family: 'Fredoka', sans-serif; font-size: 1.05rem; color: var(--muted); font-weight: 600; }
+
+        /* Section 1: Dashboard Catalog Shelf */
+        .dashboard-shelf {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(255, 117, 143, 0.02);
         }
-        .studio-logo { font-family: 'Fredoka', sans-serif; font-size: 1.25rem; color: var(--primary); font-weight: 700; }
-        .greeting-text { font-family: 'Fredoka', sans-serif; font-size: 1.05rem; color: var(--primary); font-weight: 600; }
-
-        .workspace-layout { display: flex; flex: 1; height: calc(100vh - 54px); overflow: hidden; }
-
-        /* Left Side: Clean Project Shelf */
-        .left-shelf {
-            width: 320px;
-            background-color: #fffafb;
-            border-right: 2px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .left-shelf h2 { font-family: 'Fredoka', sans-serif; font-size: 1.2rem; margin-bottom: 12px; }
+        .shelf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .shelf-header h2 { font-family: 'Fredoka', sans-serif; font-size: 1.2rem; color: var(--text); }
         
-        .new-draft-btn {
-            background-color: transparent;
-            border: 2px dashed var(--accent);
+        .new-btn {
+            background-color: #fff0f2;
             color: var(--primary);
-            padding: 10px;
-            border-radius: 12px;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
             font-weight: 700;
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.3s var(--timing);
-            margin-bottom: 16px;
-            text-align: center;
-            font-size: 0.9rem;
+            transition: all 0.2s var(--timing);
         }
-        .new-draft-btn:hover { background-color: #fff0f2; border-color: var(--primary); }
+        .new-btn:hover { background-color: var(--primary); color: white; }
 
-        .management-list { display: flex; flex-direction: column; gap: 10px; }
-        .row-card { 
-            background: var(--surface); 
-            padding: 14px; 
-            border-radius: 14px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
+        .grid-shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+        .project-card {
+            background: var(--surface);
             border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
             cursor: pointer;
-            transition: all 0.3s var(--timing);
-        }
-        .row-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-        .row-card.active-writing { border-color: var(--primary); background-color: #fff5f7; }
-
-        .row-badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; color: white; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; display: inline-block; }
-        .row-badge.novel { background-color: #ff8fab; }
-        .row-badge.manga { background-color: #4cc9f0; }
-        
-        .row-info h3 { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
-        .icon-btn { 
-            width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer; 
-            background-color: #fff2f5; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; 
-        }
-        .icon-btn.delete:hover { background-color: #ffccd5; color: #ff477e; }
-
-        /* Right Side: Simple Writing/Manga Canvas */
-        .right-writing-canvas {
-            flex: 1;
-            background-color: var(--surface);
             display: flex;
             flex-direction: column;
-            padding: 40px 50px;
-            overflow-y: auto;
+            gap: 10px;
+            transition: all 0.3s var(--timing);
+            position: relative;
+        }
+        .project-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 10px 25px rgba(0,0,0,0.02); }
+        .project-card.selected-active { border-color: var(--primary); background-color: #fffcfd; }
+
+        .card-meta { display: flex; justify-content: space-between; align-items: center; }
+        .badge { font-size: 0.6rem; padding: 3px 8px; border-radius: 6px; color: white; font-weight: 700; text-transform: uppercase; }
+        .badge.novel { background-color: #ff8fab; }
+        .badge.manga { background-color: #4cc9f0; }
+        
+        .card-title { font-size: 1.05rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
+        
+        .del-icon {
+            background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 4px; border-radius: 6px;
+            transition: color 0.2s; margin-left: auto;
+        }
+        .del-icon:hover { color: #ff477e; background-color: #fff0f2; }
+
+        /* Section 2: Immersive Creative Canvas Editor */
+        .editor-canvas {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        .editor-top-controls {
+        .editor-config-row {
             display: flex;
-            gap: 12px;
+            gap: 14px;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
             border-bottom: 1px dashed var(--border);
+            padding-bottom: 20px;
         }
-        .editor-select {
-            padding: 8px 12px;
+        .clean-select {
+            padding: 8px 14px;
             border: 1px solid var(--border);
-            background-color: #fffafb;
+            background-color: #faf7f8;
             border-radius: 10px;
             font-size: 0.85rem;
             color: var(--text);
             outline: none;
             cursor: pointer;
         }
+        .color-picker-wrapper { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); margin-left: auto; }
 
-        .writing-title-input {
+        .main-title-field {
             font-family: 'Fredoka', sans-serif;
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: var(--text);
             border: none;
             outline: none;
             width: 100%;
-            margin-bottom: 16px;
         }
+        .main-title-field::placeholder { color: #ebdcd5; }
 
-        /* Mode Containers */
-        .mode-container { display: none; flex-direction: column; flex: 1; }
-        .mode-container.active { display: flex; }
+        /* Dynamic Workspaces */
+        .workspace-panel { display: none; flex-direction: column; }
+        .workspace-panel.active { display: flex; }
 
-        .writing-textarea-pad {
-            flex: 1;
+        .novel-textarea {
             width: 100%;
-            border: 2px solid #fff0f2;
-            border-radius: 14px;
-            padding: 16px;
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--text);
-            resize: none;
+            min-height: 300px;
+            border: none;
+            resize: vertical;
             outline: none;
-            background-color: #fffafb;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--text);
+            background: transparent;
         }
+        .novel-textarea::placeholder { color: #ebdcd5; font-style: italic; }
 
-        /* Manga Workspace Styling (MangaDex Inspired) */
-        .manga-upload-zone {
+        /* Manga Dex Layout Blocks */
+        .manga-dex-block { display: flex; flex-direction: column; gap: 16px; }
+        .dex-upload-dropzone {
             border: 2px dashed var(--accent);
             background: #fffafb;
-            padding: 24px;
-            border-radius: 14px;
+            padding: 30px;
+            border-radius: 16px;
             text-align: center;
-            margin-bottom: 16px;
             position: relative;
             cursor: pointer;
+            transition: background 0.2s;
         }
-        .manga-upload-zone input[type="file"] { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+        .dex-upload-dropzone:hover { background: #fff0f3; }
+        .dex-upload-dropzone input[type="file"] { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
         
-        .panel-description-input {
+        .dex-desc-field {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #fff0f2;
-            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
             outline: none;
-            font-size: 0.95rem;
-            margin-top: 10px;
+            font-size: 1rem;
+            background: #faf7f8;
+            resize: vertical;
+            min-height: 100px;
         }
 
-        .save-bar {
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-end;
-        }
-        .save-btn {
+        /* Footer Sync Control */
+        .canvas-footer { display: flex; justify-content: flex-end; padding-top: 10px; }
+        .sync-btn {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 12px 28px;
+            padding: 14px 36px;
             border-radius: 12px;
             font-weight: 700;
+            font-size: 0.95rem;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(255, 117, 143, 0.2);
-            transition: all 0.2s;
+            box-shadow: 0 6px 20px rgba(255, 117, 143, 0.2);
+            transition: all 0.2s var(--timing);
         }
-        .save-btn:hover { background-color: #ff5c7c; transform: translateY(-1px); }
+        .sync-btn:hover { background-color: #ff5c7c; transform: translateY(-1px); box-shadow: 0 8px 25px rgba(255, 117, 143, 0.3); }
     </style>
 </head>
 <body>
 
-    <header class="studio-header">
-        <div class="studio-logo">Workspace Studio</div>
-        <div id="greeting" class="greeting-text">Hi there! ✨</div>
-    </header>
+    <div class="workspace-container">
+        <!-- Minimal Header -->
+        <header class="header-section">
+            <div class="brand-title">Studio Room</div>
+            <div id="greeting" class="greeting-bubble">Hi there! ✨</div>
+        </header>
 
-    <div class="workspace-layout">
-        <!-- Left Side Shelf -->
-        <aside class="left-shelf">
-            <h2>Your Projects</h2>
-            <div class="new-draft-btn" onclick="clearFormToNewDraft()">+ Create Fresh Work</div>
-            <div id="storyList" class="management-list"></div>
-        </aside>
+        <!-- Top Section: Library Shelf Dashboard -->
+        <section class="dashboard-shelf">
+            <div class="shelf-header">
+                <h2>Your Work Shelf</h2>
+                <button class="new-btn" onclick="clearFormToNewDraft()">+ Add New Manuscript</button>
+            </div>
+            <div id="storyList" class="grid-shelf"></div>
+        </section>
 
-        <!-- Right Side Canvas Workspace -->
-        <main class="right-writing-canvas">
+        <!-- Bottom Section: The Clean Core Document Canvas -->
+        <main class="editor-canvas">
             <input type="hidden" id="storyId">
             
-            <div class="editor-top-controls">
-                <select id="storyType" class="editor-select" onchange="switchEditorMode(this.value)">
-                    <option value="novel">📖 Novel Format</option>
-                    <option value="manga">🎨 Manga Format (MangaDex Panel)</option>
+            <div class="editor-config-row">
+                <select id="storyType" class="clean-select" onchange="switchLayoutMode(this.value)">
+                    <option value="novel">📖 Novel Manuscript</option>
+                    <option value="manga">🎨 Manga Dex Format</option>
                 </select>
                 
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); margin-left: auto;">
-                    <span>Color Theme:</span>
-                    <input type="color" id="storyColor" value="#423235" onchange="applyLiveColorChange(this.value)" style="border:none; cursor:pointer; background:none; width:24px; height:24px;">
+                <div class="color-picker-wrapper">
+                    <span>Text Style Accent:</span>
+                    <input type="color" id="storyColor" value="#2b2224" onchange="applyLiveColorChange(this.value)" style="border:none; cursor:pointer; background:none; width:26px; height:26px;">
                 </div>
             </div>
 
             <!-- Global Title Input -->
-            <input type="text" id="storyTitle" placeholder="Project Title" class="writing-title-input">
+            <input type="text" id="storyTitle" placeholder="Untitled Document" class="main-title-field">
 
-            <!-- NOVEL WORKSPACE PANEL -->
-            <div id="novelWorkspace" class="mode-container active">
-                <textarea id="storySynopsis" placeholder="Write out your clean text novel description/manuscript directly here..." class="writing-textarea-pad"></textarea>
+            <!-- Dynamic Workspace Panels -->
+            <div id="novelWorkspace" class="workspace-panel active">
+                <textarea id="storySynopsis" placeholder="Start typing your story script or description content natively right here..." class="novel-textarea"></textarea>
             </div>
 
-            <!-- MANGA WORKSPACE PANEL -->
-            <div id="mangaWorkspace" class="mode-container">
-                <div class="manga-upload-zone">
-                    <span id="fileLabel">📁 Click to select Manga Images or Chapter PDF</span>
-                    <input type="file" id="mangaFileLoader" accept="image/*, application/pdf">
+            <div id="mangaWorkspace" class="workspace-panel">
+                <div class="manga-dex-block">
+                    <div class="dex-upload-dropzone">
+                        <span id="fileLabel">📎 Drag or tap to drop chapter manuscript file / art pages (.pdf, .png)</span>
+                        <input type="file" id="mangaFileLoader" accept="image/*, application/pdf">
+                    </div>
+                    <textarea id="panelDescription" placeholder="MangaDex Panel Description (e.g., Act 1: Scene breakdown, user guidelines...)" class="dex-desc-field"></textarea>
                 </div>
-                <input type="text" id="panelDescription" placeholder="Manga Chapter / Panel Description (e.g., Chapter 1: The Beginning...)" class="panel-description-input">
             </div>
             
-            <div class="save-bar">
-                <button id="saveBtn" class="save-btn">Sync Project</button>
+            <!-- Sync Action Dock -->
+            <div class="canvas-footer">
+                <button id="saveBtn" class="sync-btn">Save Changes</button>
             </div>
         </main>
     </div>
 
     <script>
-        // --- 1. NORWAY CLOCK TIMING GREETING ---
+        // --- 1. CLOCK LOGIC FOR TIMEZONES ---
         try {
             const norwayTimeStr = new Date().toLocaleString("en-US", {timeZone: "Europe/Oslo"});
             const norwayHour = new Date(norwayTimeStr).getHours();
@@ -256,13 +257,13 @@
             document.getElementById('greeting').innerText = "Welcome back! ✨";
         }
 
-        // --- 2. CONNECT TO YOUR NEW PROJECT INSTANCE ---
+        // --- 2. CONFIG SUPABASE INITIALIZATION ---
         const SUPABASE_URL = "https://vmdpxqgemkwcojgjziuh.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtZHB4cWdlbWt3Y29qZ2p6aXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzg2NTgsImV4cCI6MjA5ODgxNDY1OH0.sAlGQJzAy8JLUvfBuyfNo23v3A5IStwYhNbMMbDVtFQ";
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- 3. WORKSPACE UI LOGIC ---
-        function switchEditorMode(mode) {
+        // --- 3. DYNAMIC INTERFACE FUNCTIONS ---
+        function switchLayoutMode(mode) {
             document.getElementById('novelWorkspace').classList.remove('active');
             document.getElementById('mangaWorkspace').classList.remove('active');
             
@@ -280,11 +281,11 @@
 
         document.getElementById('mangaFileLoader').addEventListener('change', function(e) {
             if(e.target.files[0]) {
-                document.getElementById('fileLabel').innerText = `✅ Chosen: ${e.target.files[0].name}`;
+                document.getElementById('fileLabel').innerText = `✅ Attachment: ${e.target.files[0].name}`;
             }
         });
 
-        // --- 4. DATA ENGINE (LOAD, EDIT, UPDATE, DELETE) ---
+        // --- 4. ENGINE CONTROLLER ACTIONS ---
         async function fetchStories() {
             const { data: stories, error } = await supabase.from('stories').select('*').order('created_at', { ascending: false });
             if (error) return;
@@ -296,15 +297,15 @@
             stories.forEach(story => {
                 const isActive = currentEditingId === story.id;
                 const card = document.createElement('div');
-                card.className = `row-card ${isActive ? 'active-writing' : ''}`;
+                card.className = `project-card ${isActive ? 'selected-active' : ''}`;
                 card.setAttribute('onclick', `selectProject('${story.id}', '${escape(story.title)}', '${story.type}', '${escape(story.synopsis || '')}', '${story.text_color || ''}')`);
                 
                 card.innerHTML = `
-                    <div class="row-info">
-                        <span class="row-badge ${story.type}">${story.type}</span>
-                        <h3 style="color: ${story.text_color || 'inherit'};">${story.title || 'Untitled'}</h3>
+                    <div class="card-meta">
+                        <span class="badge ${story.type}">${story.type}</span>
+                        <button class="del-icon" onclick="event.stopPropagation(); deleteStory('${story.id}')">🗑️</button>
                     </div>
-                    <button class="icon-btn delete" onclick="event.stopPropagation(); deleteStory('${story.id}')">🗑️</button>
+                    <div class="card-title" style="color: ${story.text_color || 'inherit'};">${story.title || 'Untitled'}</div>
                 `;
                 listEl.appendChild(card);
             });
@@ -314,7 +315,7 @@
             document.getElementById('storyId').value = id;
             document.getElementById('storyTitle').value = unescape(title);
             document.getElementById('storyType').value = type;
-            switchEditorMode(type);
+            switchLayoutMode(type);
 
             if (type === 'novel') {
                 document.getElementById('storySynopsis').value = unescape(content);
@@ -333,11 +334,10 @@
 
         document.getElementById('saveBtn').addEventListener('click', async () => {
             const id = document.getElementById('storyId').value;
-            const title = document.getElementById('storyTitle').value || 'Untitled Project';
+            const title = document.getElementById('storyTitle').value || 'Untitled';
             const type = document.getElementById('storyType').value;
             const text_color = document.getElementById('storyColor').value;
             
-            // Map inputs based on selected layout mode
             const contentData = (type === 'novel') ? document.getElementById('storySynopsis').value : document.getElementById('panelDescription').value;
 
             const payload = { title, type, synopsis: contentData, text_color };
@@ -350,11 +350,11 @@
             }
             
             fetchStories();
-            alert("Project successfully synchronized!");
+            alert("Changes perfectly saved!");
         });
 
         async function deleteStory(id) {
-            if (confirm("Permanently clear this entry from your catalog?")) {
+            if (confirm("Are you sure you want to completely erase this card data?")) {
                 await supabase.from('stories').delete().eq('id', id);
                 if(document.getElementById('storyId').value === id) clearFormToNewDraft();
                 else fetchStories();
@@ -366,9 +366,9 @@
             document.getElementById('storyTitle').value = '';
             document.getElementById('storySynopsis').value = '';
             document.getElementById('panelDescription').value = '';
-            document.getElementById('fileLabel').innerText = "📁 Click to select Manga Images or Chapter PDF";
+            document.getElementById('fileLabel').innerText = "📎 Drag or tap to drop chapter manuscript file / art pages (.pdf, .png)";
             document.getElementById('mangaFileLoader').value = '';
-            applyLiveColorChange("#423235");
+            applyLiveColorChange("#2b2224");
             fetchStories();
         }
 
