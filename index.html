@@ -1,2 +1,373 @@
-// Change from: supabase.from('stories')
-const { data: stories, error } = await db.from('stories').select('*').order('created_at', { ascending: false });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Workspace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-main: #fff5f7;
+            --surface: #ffffff;
+            --primary: #ff758f;
+            --accent: #ffb3c1;
+            --text: #423235;
+            --muted: #a38f92;
+            --border: #ffe3e8;
+            --timing: cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Top Bar Navigation & Brand */
+        .studio-header { 
+            background-color: var(--surface); 
+            padding: 12px 24px; 
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .studio-logo { font-family: 'Fredoka', sans-serif; font-size: 1.25rem; color: var(--primary); font-weight: 700; }
+        .greeting-text { font-family: 'Fredoka', sans-serif; font-size: 1.05rem; color: var(--primary); font-weight: 600; }
+
+        /* Horizontal Project Shelf Bar */
+        .top-shelf-bar {
+            background-color: #fffafb;
+            border-bottom: 2px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .top-shelf-bar::-webkit-scrollbar { height: 6px; }
+        .top-shelf-bar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        .new-draft-btn {
+            background-color: transparent;
+            border: 2px dashed var(--accent);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s var(--timing);
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .new-draft-btn:hover { background-color: #fff0f2; border-color: var(--primary); }
+
+        .horizontal-management-list { display: flex; gap: 12px; align-items: center; }
+        
+        .row-card { 
+            background: var(--surface); 
+            padding: 8px 14px; 
+            border-radius: 12px; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s var(--timing);
+            flex-shrink: 0;
+        }
+        .row-card:hover { transform: translateY(-1px); border-color: var(--accent); }
+        .row-card.active-writing { border-color: var(--primary); background-color: #fff5f7; box-shadow: 0 2px 8px rgba(255,117,143,0.1); }
+
+        .row-badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; color: white; font-weight: 700; text-transform: uppercase; }
+        .row-badge.novel { background-color: #ff8fab; }
+        .row-badge.manga { background-color: #4cc9f0; }
+        
+        .row-info-title { font-size: 0.9rem; font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+        
+        .icon-btn { 
+            width: 24px; height: 24px; border-radius: 6px; border: none; cursor: pointer; 
+            background-color: #fff2f5; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; 
+        }
+        .icon-btn.delete:hover { background-color: #ffccd5; color: #ff477e; }
+
+        /* Massive Immersive Writing Workspace */
+        .main-canvas-area {
+            flex: 1;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 10%;
+            overflow-y: auto;
+        }
+
+        .editor-top-controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed var(--border);
+        }
+        .editor-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            background-color: #fffafb;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: var(--text);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .writing-title-input {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text);
+            border: none;
+            outline: none;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        /* Workspaces */
+        .mode-container { display: none; flex-direction: column; flex: 1; min-height: 300px; }
+        .mode-container.active { display: flex; }
+
+        .writing-textarea-pad {
+            flex: 1;
+            width: 100%;
+            border: 2px solid #fff0f2;
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--text);
+            resize: none;
+            outline: none;
+            background-color: #fffafb;
+        }
+
+        /* Manga Workspace Styling (MangaDex Inspired) */
+        .manga-upload-zone {
+            border: 2px dashed var(--accent);
+            background: #fffafb;
+            padding: 40px 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .manga-upload-zone:hover { background-color: #fff0f2; }
+        .manga-upload-zone input[type="file"] { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+        
+        .panel-description-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #fff0f2;
+            border-radius: 12px;
+            outline: none;
+            font-size: 1rem;
+            background-color: #fffafb;
+        }
+
+        .save-bar {
+            margin-top: 25px;
+            display: flex;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+        }
+        .save-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 117, 143, 0.2);
+            transition: all 0.2s;
+        }
+        .save-btn:hover { background-color: #ff5c7c; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+    <!-- Header Panel -->
+    <header class="studio-header">
+        <div class="studio-logo">Workspace Studio</div>
+        <div id="greeting" class="greeting-text">Hi there! ✨</div>
+    </header>
+
+    <!-- Top Horizontal Shelf bar for items -->
+    <section class="top-shelf-bar">
+        <div class="new-draft-btn" onclick="clearFormToNewDraft()">+ Create Fresh Work</div>
+        <div id="storyList" class="horizontal-management-list"></div>
+    </section>
+
+    <!-- Broad Immersive Editing Canvas -->
+    <main class="main-canvas-area">
+        <input type="hidden" id="storyId">
+        
+        <div class="editor-top-controls">
+            <select id="storyType" class="editor-select" onchange="switchEditorMode(this.value)">
+                <option value="novel">📖 Novel Format</option>
+                <option value="manga">🎨 Manga Format (MangaDex Panel)</option>
+            </select>
+            
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); margin-left: auto;">
+                <span>Color Theme:</span>
+                <input type="color" id="storyColor" value="#423235" onchange="applyLiveColorChange(this.value)" style="border:none; cursor:pointer; background:none; width:24px; height:24px;">
+            </div>
+        </div>
+
+        <!-- Global Title Input -->
+        <input type="text" id="storyTitle" placeholder="Project Title" class="writing-title-input">
+
+        <!-- NOVEL CANVAS -->
+        <div id="novelWorkspace" class="mode-container active">
+            <textarea id="storySynopsis" placeholder="Write out your clean text novel description/manuscript directly here..." class="writing-textarea-pad"></textarea>
+        </div>
+
+        <!-- MANGA CANVAS -->
+        <div id="mangaWorkspace" class="mode-container">
+            <div class="manga-upload-zone">
+                <span id="fileLabel">📁 Click to select Manga Images or Chapter PDF</span>
+                <input type="file" id="mangaFileLoader" accept="image/*, application/pdf">
+            </div>
+            <input type="text" id="panelDescription" placeholder="Manga Chapter / Panel Description (e.g., Chapter 1: The Beginning...)" class="panel-description-input">
+        </div>
+        
+        <div class="save-bar">
+            <button id="saveBtn" class="save-btn">Sync Project</button>
+        </div>
+    </main>
+
+    <script>
+        // Time greeting block
+        try {
+            const norwayTimeStr = new Date().toLocaleString("en-US", {timeZone: "Europe/Oslo"});
+            const norwayHour = new Date(norwayTimeStr).getHours();
+            const greetingEl = document.getElementById('greeting');
+            if (norwayHour >= 5 && norwayHour < 12) greetingEl.innerText = "Good morning, cutie! 🌸";
+            else if (norwayHour >= 12 && norwayHour < 17) greetingEl.innerText = "Good afternoon, sweetie! ☀️";
+            else if (norwayHour >= 17 && norwayHour < 22) greetingEl.innerText = "Good evening, darling! 🌟";
+            else greetingEl.innerText = "Up late, little star? 🌙";
+        } catch(e) {
+            document.getElementById('greeting').innerText = "Welcome back! ✨";
+        }
+
+        // Credentials & Client Config Fixed
+        const SUPABASE_URL = "https://vmdpxqgemkwcojgjziuh.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtZHB4cWdlbWt3Y29qZ2p6aXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzg2NTgsImV4cCI6MjA5ODgxNDY1OH0.sAlGQJzAy8JLUvfBuyfNo23v3A5IStwYhNbMMbDVtFQ";
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function switchEditorMode(mode) {
+            document.getElementById('novelWorkspace').classList.remove('active');
+            document.getElementById('mangaWorkspace').classList.remove('active');
+            if (mode === 'novel') document.getElementById('novelWorkspace').classList.add('active');
+            else document.getElementById('mangaWorkspace').classList.add('active');
+        }
+
+        function applyLiveColorChange(colorHex) {
+            document.getElementById('storyTitle').style.color = colorHex;
+            document.getElementById('storySynopsis').style.color = colorHex;
+        }
+
+        document.getElementById('mangaFileLoader').addEventListener('change', function(e) {
+            if(e.target.files[0]) {
+                document.getElementById('fileLabel').innerText = `✅ Chosen: ${e.target.files[0].name}`;
+            }
+        });
+
+        async function fetchStories() {
+            const { data: stories, error } = await db.from('stories').select('*').order('created_at', { ascending: false });
+            if (error) return;
+            
+            const listEl = document.getElementById('storyList');
+            const currentEditingId = document.getElementById('storyId').value;
+            listEl.innerHTML = '';
+            
+            stories.forEach(story => {
+                const isActive = currentEditingId === story.id;
+                const card = document.createElement('div');
+                card.className = `row-card ${isActive ? 'active-writing' : ''}`;
+                card.setAttribute('onclick', `selectProject('${story.id}', '${escape(story.title)}', '${story.type}', '${escape(story.synopsis || '')}', '${story.text_color || ''}')`);
+                
+                card.innerHTML = `
+                    <span class="row-badge ${story.type}">${story.type}</span>
+                    <span class="row-info-title" style="color: ${story.text_color || 'inherit'};">${story.title || 'Untitled'}</span>
+                    <button class="icon-btn delete" onclick="event.stopPropagation(); deleteStory('${story.id}')">🗑️</button>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function selectProject(id, title, type, content, color) {
+            document.getElementById('storyId').value = id;
+            document.getElementById('storyTitle').value = unescape(title);
+            document.getElementById('storyType').value = type;
+            switchEditorMode(type);
+
+            if (type === 'novel') {
+                document.getElementById('storySynopsis').value = unescape(content);
+                document.getElementById('panelDescription').value = '';
+            } else {
+                document.getElementById('panelDescription').value = unescape(content);
+                document.getElementById('storySynopsis').value = '';
+            }
+            
+            if(color) {
+                document.getElementById('storyColor').value = color;
+                applyLiveColorChange(color);
+            }
+            fetchStories();
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const id = document.getElementById('storyId').value;
+            const title = document.getElementById('storyTitle').value || 'Untitled Project';
+            const type = document.getElementById('storyType').value;
+            const text_color = document.getElementById('storyColor').value;
+            
+            const contentData = (type === 'novel') ? document.getElementById('storySynopsis').value : document.getElementById('panelDescription').value;
+            const payload = { title, type, synopsis: contentData, text_color };
+
+            if (id) {
+                await db.from('stories').update(payload).eq('id', id);
+            } else {
+                const { data } = await db.from('stories').insert([payload]).select();
+                if(data && data[0]) document.getElementById('storyId').value = data[0].id;
+            }
+            
+            fetchStories();
+            alert("Project successfully synchronized!");
+        });
+
+        async function deleteStory(id) {
+            if (confirm("Permanently clear this entry from your catalog?")) {
+                await db.from('stories').delete().eq('id', id);
+                if(document.getElementById('storyId').value === id) clearFormToNewDraft();
+                else fetchStories();
+            }
+        }
+
+        function clearFormToNewDraft() {
+            document.getElementById('storyId').value = '';
+            document.getElementById('storyTitle').value = '';
+            document.getElementById('storySynopsis').value = '';
+            document.getElementById('panelDescription').value = '';
+            document.getElementById('fileLabel').innerText = "📁 Click to select Manga Images or Chapter PDF";
+            document.getElementById('mangaFileLoader').value = '';
+            applyLiveColorChange("#423235");
+            fetchStories();
+        }
+
+        fetchStories();
+    </script>
+</body>
+</html>
