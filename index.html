@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Workspace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&family=Playfair+Display:ital,wght@0,500;1,400&family=Caveat:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-main: #fff5f7;
+            --surface: #ffffff;
+            --primary: #ff758f;
+            --accent: #ffb3c1;
+            --text: #423235;
+            --muted: #a38f92;
+            --border: #ffe3e8;
+            --timing: cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        .studio-header { 
+            background-color: var(--surface); 
+            padding: 14px 24px; 
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .studio-logo { font-family: 'Fredoka', sans-serif; font-size: 1.25rem; color: var(--primary); font-weight: 700; }
+        .greeting-text { font-family: 'Fredoka', sans-serif; font-size: 1.05rem; color: var(--primary); font-weight: 600; }
+
+        /* Main Split Workspace Screen */
+        .workspace-layout {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 54px);
+            overflow: hidden;
+        }
+
+        /* Left Side: Project Shelf Manager */
+        .left-shelf {
+            width: 380px;
+            background-color: #fffafb;
+            border-right: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .left-shelf h2 { font-family: 'Fredoka', sans-serif; font-size: 1.2rem; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .new-draft-btn {
+            background-color: transparent;
+            border: 2px dashed var(--accent);
+            color: var(--primary);
+            padding: 12px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s var(--timing);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .new-draft-btn:hover { background-color: #fff0f2; border-color: var(--primary); }
+
+        .management-list { display: flex; flex-direction: column; gap: 12px; }
+        .row-card { 
+            background: var(--surface); 
+            padding: 16px; 
+            border-radius: 18px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s var(--timing);
+        }
+        .row-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255, 117, 143, 0.05); border-color: var(--accent); }
+        .row-card.active-writing { border-color: var(--primary); background-color: #fff5f7; box-shadow: 0 4px 15px rgba(255, 117, 143, 0.04); }
+
+        .row-badge { font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; color: white; font-weight: 700; display: inline-block; margin-bottom: 4px; text-transform: uppercase; }
+        .row-badge.novel { background-color: #ff8fab; }
+        .row-badge.manga { background-color: #4cc9f0; }
+        .row-badge.hidden-view { background-color: var(--muted); }
+        
+        .row-info h3 { font-size: 1.05rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+        .row-actions { display: flex; gap: 6px; }
+        .icon-btn { 
+            width: 34px; height: 34px; border-radius: 10px; border: none; cursor: pointer; 
+            background-color: #fff2f5; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: all 0.2s; 
+        }
+        .icon-btn:hover { transform: scale(1.05); background-color: #ffe3e8; }
+        .icon-btn.delete:hover { background-color: #ffccd5; color: #ff477e; }
+
+        /* Right Side: Immersive Immersive Writing Canvas Pad */
+        .right-writing-canvas {
+            flex: 1;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            padding: 40px 60px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Top Settings bar inside the editor app view */
+        .editor-top-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed var(--border);
+        }
+        .editor-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            background-color: #fffafb;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: var(--text);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Clean Writing Mode Inputs */
+        .writing-title-input {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text);
+            border: none;
+            outline: none;
+            width: 100%;
+            margin-bottom: 20px;
+            padding: 4px 0;
+        }
+        .writing-title-input::placeholder { color: #ebdcd5; }
+
+        .writing-textarea-pad {
+            flex: 1;
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--text);
+            resize: none;
+            background: transparent;
+        }
+        .writing-textarea-pad::placeholder { color: #ebdcd5; font-style: italic; }
+
+        /* Actions Dock Floating Bar at Bottom Right */
+        .action-dock {
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 10px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
+
+        .dock-file-btn {
+            position: relative;
+            background: #fff2f5;
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            border-radius: 12px;
+            color: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+        .dock-file-btn input[type="file"] { position: absolute; left:0; top:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+
+        .save-dock-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 117, 143, 0.2);
+            transition: all 0.2s;
+        }
+        .save-dock-btn:hover { background-color: #ff5c7c; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+    <header class="studio-header">
+        <div class="studio-logo">Workspace Studio</div>
+        <div id="greeting" class="greeting-text">Hi there! ✨</div>
+    </header>
+
+    <div class="workspace-layout">
+        <!-- Left Side Project Shelf Column -->
+        <aside class="left-shelf">
+            <h2>Shelf <span style="font-size: 0.9rem; color: var(--muted); font-weight: normal;">Drafts</span></h2>
+            <div class="new-draft-btn" onclick="clearFormToNewDraft()">+ Start New Blank Draft</div>
+            <div id="storyList" class="management-list"></div>
+        </aside>
+
+        <!-- Right Side Document Application Interface Layout -->
+        <main class="right-writing-canvas">
+            <input type="hidden" id="storyId">
+            
+            <div class="editor-top-controls">
+                <select id="storyType" class="editor-select">
+                    <option value="novel">📖 Novel Mode</option>
+                    <option value="manga">🎨 Manga Script</option>
+                </select>
+                <select id="storyStatus" class="editor-select">
+                    <option value="Ongoing">⏳ Ongoing</option>
+                    <option value="Completed">💖 Completed</option>
+                    <option value="Hidden Draft">🔒 Hidden / Secret Draft</option>
+                </select>
+                <select id="storyFont" class="editor-select" onchange="applyLiveFontChange(this.value)">
+                    <option value="'Quicksand', sans-serif">Rounded Typewriter</option>
+                    <option value="'Playfair Display', serif">Elegant Serif</option>
+                    <option value="'Caveat', cursive">Cozy Handwriting</option>
+                </select>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); margin-left: auto;">
+                    <span>Color:</span>
+                    <input type="color" id="storyColor" value="#423235" onchange="applyLiveColorChange(this.value)" style="border:none; cursor:pointer; background:none; width:24px; height:24px;">
+                </div>
+            </div>
+
+            <!-- Immersive Core App Writing Fields -->
+            <input type="text" id="storyTitle" placeholder="Untitled Story" class="writing-title-input">
+            
+            <textarea id="storySynopsis" placeholder="Start typing her raw manuscript text right here..." class="writing-textarea-pad"></textarea>
+            
+            <!-- Controls Floating Shelf Overlay -->
+            <div class="action-dock">
+                <button class="dock-file-btn">
+                    <span id="fileStatusLabel">📄 Load .txt File</span>
+                    <input type="file" id="textFileLoader" accept=".txt">
+                </button>
+                <button id="saveBtn" class="save-dock-btn">Sync Draft</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- 1. INSTANT ZONE CALCULATOR ---
+        try {
+            const norwayTimeStr = new Date().toLocaleString("en-US", {timeZone: "Europe/Oslo"});
+            const norwayHour = new Date(norwayTimeStr).getHours();
+            const greetingEl = document.getElementById('greeting');
+            if (norwayHour >= 5 && norwayHour < 12) greetingEl.innerText = "Good morning, cutie! 🌸";
+            else if (norwayHour >= 12 && norwayHour < 17) greetingEl.innerText = "Good afternoon, sweetie! ☀️";
+            else if (norwayHour >= 17 && norwayHour < 22) greetingEl.innerText = "Good evening, darling! 🌟";
+            else greetingEl.innerText = "Up late, little star? 🌙";
+        } catch(e) {
+            document.getElementById('greeting').innerText = "Welcome back! ✨";
+        }
+
+        // --- 2. INITIALIZE SUPABASE CLIENT ---
+        const SUPABASE_URL = "https://qysdbirpjywyfztsztnv.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5c2RiaXJwanl3eWZ6dHN6dG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMTQ2NTIsImV4cCI6MjA5ODc5MDY1Mn0.UVJB72IqnWDWsNvOo98qf6bD6rZQbHvpiZuWIna0kJY";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // --- 3. LIVE EDITOR VISUAL BINDS ---
+        function applyLiveFontChange(fontStr) {
+            document.getElementById('storyTitle').style.fontFamily = fontStr;
+            document.getElementById('storySynopsis').style.fontFamily = fontStr;
+        }
+        function applyLiveColorChange(colorHex) {
+            document.getElementById('storyTitle').style.color = colorHex;
+            document.getElementById('storySynopsis').style.color = colorHex;
+        }
+
+        // --- 4. DATA LOADER FROM TEXT DOCKS ---
+        document.getElementById('textFileLoader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('fileStatusLabel').innerText = `✅ Loaded`;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById('storySynopsis').value = evt.target.result;
+            };
+            reader.readAsText(file);
+        });
+
+        // --- 5. RENDER SYSTEM AND ACTIONS ---
+        async function fetchStories() {
+            const { data: stories, error } = await supabase.from('stories').select('*').order('created_at', { ascending: false });
+            if (error) return;
+            
+            const listEl = document.getElementById('storyList');
+            const currentEditingId = document.getElementById('storyId').value;
+            listEl.innerHTML = '';
+            
+            stories.forEach(story => {
+                const isHidden = story.status === 'Hidden Draft';
+                const isActive = currentEditingId === story.id;
+                const card = document.createElement('div');
+                card.className = `row-card ${isActive ? 'active-writing' : ''}`;
+                card.setAttribute('onclick', `selectCardToEdit('${story.id}', '${escape(story.title)}', '${story.type}', '${story.status}', '${escape(story.synopsis || '')}', '${story.font_style || ''}', '${story.text_color || ''}')`);
+                
+                card.innerHTML = `
+                    <div class="row-info">
+                        <span class="row-badge ${story.type}">${story.type}</span>
+                        ${isHidden ? `<span class="row-badge hidden-view">Hidden</span>` : ''}
+                        <h3 style="font-family: ${story.font_style || 'inherit'}; color: ${story.text_color || 'inherit'};">${story.title || 'Untitled'}</h3>
+                    </div>
+                    <div class="row-actions">
+                        <button class="icon-btn delete" onclick="event.stopPropagation(); deleteStory('${story.id}')">🗑️</button>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function selectCardToEdit(id, title, type, status, synopsis, font, color) {
+            document.getElementById('storyId').value = id;
+            document.getElementById('storyTitle').value = unescape(title);
+            document.getElementById('storyType').value = type;
+            document.getElementById('storyStatus').value = status;
+            document.getElementById('storySynopsis').value = unescape(synopsis);
+            
+            if(font) {
+                document.getElementById('storyFont').value = font;
+                applyLiveFontChange(font);
+            }
+            if(color) {
+                document.getElementById('storyColor').value = color;
+                applyLiveColorChange(color);
+            }
+            fetchStories(); // Refreshes active card background highlighting border lines
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const id = document.getElementById('storyId').value;
+            const title = document.getElementById('storyTitle').value || 'Untitled';
+            const type = document.getElementById('storyType').value;
+            const status = document.getElementById('storyStatus').value;
+            const synopsis = document.getElementById('storySynopsis').value;
+            const font_style = document.getElementById('storyFont').value;
+            const text_color = document.getElementById('storyColor').value;
+
+            const payload = { title, type, status, synopsis, font_style, text_color };
+
+            if (id) {
+                await supabase.from('stories').update(payload).eq('id', id);
+            } else {
+                const { data } = await supabase.from('stories').insert([payload]).select();
+                if(data && data[0]) document.getElementById('storyId').value = data[0].id;
+            }
+            fetchStories();
+        });
+
+        async function deleteStory(id) {
+            if (confirm("Delete this draft permanently from the database shelf?")) {
+                await supabase.from('stories').delete().eq('id', id);
+                if(document.getElementById('storyId').value === id) clearFormToNewDraft();
+                else fetchStories();
+            }
+        }
+
+        function clearFormToNewDraft() {
+            document.getElementById('storyId').value = '';
+            document.getElementById('storyTitle').value = '';
+            document.getElementById('storySynopsis').value = '';
+            document.getElementById('fileStatusLabel').innerText = "📄 Load .txt File";
+            applyLiveFontChange("'Quicksand', sans-serif");
+            applyLiveColorChange("#423235");
+            fetchStories();
+        }
+
+        fetchStories();
+    </script>
+</body>
+</html>
